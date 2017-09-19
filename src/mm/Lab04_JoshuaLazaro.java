@@ -1,17 +1,23 @@
 package mm;
 
-public class StrassenMatMulti {
+public class Lab04_JoshuaLazaro {
 
 	public static void main(String[] args) {
 		int[][] matA = {
-				{4, 5},
-				{6, 9}
+				{4, 5, 3, 1},
+				{6, 9, 0, 2},
+				{8, 1, 6, 3},
+				{7, 3, 2, 5}
 		};
 		int[][] matB = {
-				{2, 4},
-				{3, 7}
+				{2, 4, 2, 6},
+				{3, 7, 9, 1},
+				{9, 0, 4, 6},
+				{8, 7, 1, 4}
 		};
-		int[][] matC = bruteForce(matA, matB);
+		
+		System.out.println(1.5 + 4);
+		int[][] matC = matMulti(matA, matB, matA.length);
 		int[][] matD = strassen(matA, matB);
 		
 		System.out.println("Brute Force:");
@@ -32,18 +38,42 @@ public class StrassenMatMulti {
 
 	}
 
-	public static int[][] bruteForce(int[][] matA, int[][] matB){
-		int size = matA.length;
-		int[][] matC = new int[size][size];
-
-		for(int row = 0; row < size; row++){
-			for(int col = 0; col < size; col++){
-				matC[row][col] = 0;
-				for(int down = 0; down < size; down++){
-					matC[row][col] += matA[row][down] * matB[down][col];
-				}
-			}
+	public static int[][] matMulti(int[][] matA, int[][] matB, int size){
+		int[][] matC = new int [size][size];
+		if(size == 1){
+			matC[0][0] = matA[0][0] * matB[0][0];
 		}
+		else{
+			int[][] A11 = new int [size/2][size/2];
+			int[][] A12 = new int [size/2][size/2];
+			int[][] A21 = new int [size/2][size/2];
+			int[][] A22 = new int [size/2][size/2];
+			int[][] B11 = new int [size/2][size/2];
+			int[][] B12 = new int [size/2][size/2];
+			int[][] B21 = new int [size/2][size/2];
+			int[][] B22 = new int [size/2][size/2];
+			
+			int[][] C11 = new int[size/2][size/2];
+			int[][] C12 = new int[size/2][size/2];
+			int[][] C21 = new int[size/2][size/2];
+			int[][] C22 = new int[size/2][size/2];
+			
+			seperate(matA, A11, 0, 0);
+			seperate(matA, A12, 0, size / 2);
+			seperate(matA, A21, size / 2, 0);
+			seperate(matA, A22, size / 2, size / 2);
+			seperate(matB, B11, 0, 0);
+			seperate(matB, B12, 0, size / 2);
+			seperate(matB, B21, size / 2, 0);
+			seperate(matB, B22, size / 2, size / 2);
+			
+			C11 = matAdd(matMulti(A11, B11, size/2), matMulti(A12,B21, size/2));
+			C12 = matAdd(matMulti(A11, B12, size/2), matMulti(A12,B22, size/2));
+			C21 = matAdd(matMulti(A21, B11, size/2), matMulti(A22,B21, size/2));
+			C22 = matAdd(matMulti(A21, B12, size/2), matMulti(A22,B22, size/2));
+		
+			matC = combine(C11, C12, C21, C22, size);
+		}	
 
 		return matC;
 	}
@@ -85,14 +115,14 @@ public class StrassenMatMulti {
 		int[][] C22 = new int[size/2][size/2];
 		
 		//cutting each matrix into 4
-		A11 = seperate(matA, A11, 0, 0);
-		A12 = seperate(matA, A12, 0, size / 2);
-		A21 = seperate(matA, A21, size / 2, 0);
-		A22 = seperate(matA, A22, size / 2, size / 2);
-		B11 = seperate(matB, B11, 0, 0);
-		B12 = seperate(matB, B12, 0, size / 2);
-		B21 = seperate(matB, B21, size / 2, 0);
-		B22 = seperate(matB, B22, size / 2, size / 2);
+		seperate(matA, A11, 0, 0);
+		seperate(matA, A12, 0, size / 2);
+		seperate(matA, A21, size / 2, 0);
+		seperate(matA, A22, size / 2, size / 2);
+		seperate(matB, B11, 0, 0);
+		seperate(matB, B12, 0, size / 2);
+		seperate(matB, B21, size / 2, 0);
+		seperate(matB, B22, size / 2, size / 2);
 		
 		//10 S matrices
 		S1 = matSub(B12, B22);
@@ -107,13 +137,13 @@ public class StrassenMatMulti {
 		S10 = matAdd(B11, B12);
 			
 		//7 P matrices
-		P1 = matMulti(A11, S1);
-		P2 = matMulti(S2, B22);
-		P3 = matMulti(S3, B11);
-		P4 = matMulti(A22, S4);
-		P5 = matMulti(S5, S6);
-		P6 = matMulti(S7, S8);
-		P7 = matMulti(S9, S10);
+		P1 = matMulti(A11, S1, size/2);
+		P2 = matMulti(S2, B22, size/2);
+		P3 = matMulti(S3, B11, size/2);
+		P4 = matMulti(A22, S4, size/2);
+		P5 = matMulti(S5, S6, size/2);
+		P6 = matMulti(S7, S8, size/2);
+		P7 = matMulti(S9, S10, size/2);
 		
 		//C11
 		C11 = matAdd(P5, P4);
@@ -130,30 +160,13 @@ public class StrassenMatMulti {
 		
 		return combine(C11, C12, C21, C22, size);
 	}
-	
-	public static int[][] matMulti(int[][] matA, int[][] matB){
-		int size = matA.length;
-		int[][] matC = new int[size][size];
 
-		for(int row = 0; row < size; row++){
-			for(int col = 0; col < size; col++){
-				matC[row][col] = 0;
-				for(int down = 0; down < size; down++){
-					matC[row][col] += matA[row][down] * matB[down][col];
-				}
-			}
-		}
-
-		return matC;
-	}
-
-	public static int[][] seperate(int[][] mainMat, int[][] subMat, int row, int col){
+	public static void seperate(int[][] mainMat, int[][] subMat, int row, int col){
 		for(int r1 = 0, r2 = row; r1 < subMat.length; r1++, r2++){
 			for(int c1 = 0, c2 = col; c1 < subMat.length; c1++, c2++){
 				subMat[r1][c1] = mainMat [r2][c2];
 			}
 		}
-		return subMat;
 	}
 	
 	public static int[][] combine(int[][]C1, int[][]C2, int[][]C3, int[][]C4, int size){
